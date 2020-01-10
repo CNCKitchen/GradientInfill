@@ -1,48 +1,55 @@
+##################################################
+## Gradient Infill for 3D prints
+##################################################
+## MIT license
+##################################################
+## Author: Stefan Hermann - CNC Kitchen
+## Version: 1.0
+##################################################
+
 import re
 
+################ EDIT this section for your creation parameters
 gcodeFile = open("bending_beam_30p.gcode", "r")
 outputFile = open("output_bending_beam_30p.gcode","w+")
 
-infillType = 2
-maxFlow = 350
-minFlow = 50
-gradientThickness = 6
-gradientDiscretization = 4
+infillType = 2 # 0 = nothing, 1 = inner wall, 2 = infill
 
-# 0 = nothing, 1 = inner wall, 2 = infill
+maxFlow = 350 #maximum extrusion flow
+minFlow = 50 #minimum extrusion flow
+gradientThickness = 6 #thickness of the gradient (max to min) in mm
+gradientDiscretization = 4 #only appicable for linear infills; number of segemnts within the gradient( segmentLength=gradientThickness/gradientDiscretization); use sensible values to not overload the printer
+###############################################################
+
+
+#General variables
 currentSection = 0
 lastPosition = [[-10000,-10000]]
 gradientDiscretizationLength = gradientThickness/gradientDiscretization
 
-def dist(x1, y1, x2, y2, x3, y3): # x3,y3 is the point
+
+def dist(x1, y1, x2, y2, x3, y3): # calculate the diestance of a point to line with non-infinite length
     px = x2-x1
     py = y2-y1
-
     norm = px*px + py*py
-
     u =  ((x3 - x1) * px + (y3 - y1) * py) / float(norm)
-
     if u > 1:
         u = 1
     elif u < 0:
         u = 0
-
     x = x1 + u * px
     y = y1 + u * py
-
     dx = x - x3
     dy = y - y3
-
     dist = (dx*dx + dy*dy)**.5
-
     return dist
 
-def getXY(currentLine):
+def getXY(currentLine): #Returns the X and Y value of the current line
     elementX = re.findall("[X]\d*\.*\d*",currentLine)[0][1:]
     elementY = re.findall("[Y]\d*\.*\d*",currentLine)[0][1:]
     return [float(elementX),float(elementY)]
 
-def maprange( a, b, s):
+def mapRange( a, b, s):
 	(a1, a2), (b1, b2) = a, b
 	return  b1 + ((s - a1) * (b2 - b1) / (a2 - a1))
 
@@ -93,7 +100,7 @@ for currentLine in gcodeFile:
                             if distance < shortestDistance:
                                 shortestDistance = distance
                         if shortestDistance < gradientThickness:
-                            outputFile.write("G1 X" + str(round(segmentEnd[0],3)) + " Y" + str(round(segmentEnd[1],3)) + " E" + str(round(extrusionLengthPerSegment * maprange((0, gradientThickness), (maxFlow/100, minFlow/100), shortestDistance),5)) + "\n")
+                            outputFile.write("G1 X" + str(round(segmentEnd[0],3)) + " Y" + str(round(segmentEnd[1],3)) + " E" + str(round(extrusionLengthPerSegment * mapRange((0, gradientThickness), (maxFlow/100, minFlow/100), shortestDistance),5)) + "\n")
                         else:
                             outputFile.write("G1 X" + str(round(segmentEnd[0],3)) + " Y" + str(round(segmentEnd[1],3)) + " E" + str(round(extrusionLengthPerSegment * minFlow/100,5)) + "\n" )
                         lastPosition[0] = [segmentEnd[0],segmentEnd[1]]
@@ -128,7 +135,7 @@ for currentLine in gcodeFile:
                     splitLine = currentLine.split(" ")
                     for element in splitLine:
                         if "E" in element:
-                            newE = float(element[1:len(element)]) * maprange((0, gradientThickness), (maxFlow/100, minFlow/100), shortestDistance)
+                            newE = float(element[1:len(element)]) * mapRange((0, gradientThickness), (maxFlow/100, minFlow/100), shortestDistance)
                             outPutLine = outPutLine + "E" + str(round(newE,5))
                         else:
                             outPutLine = outPutLine + element + " "
