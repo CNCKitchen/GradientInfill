@@ -8,6 +8,7 @@
 ##################################################
 
 import re
+from enum import Enum
 
 ################ EDIT this section for your creation parameters
 INPUT_FILE_NAME = "cloverleaf_wHole_gyroid.gcode"
@@ -20,6 +21,12 @@ minFlow = 50 #minimum extrusion flow
 gradientThickness = 6 #thickness of the gradient (max to min) in mm
 gradientDiscretization = 4 #only applicable for linear infills; number of segments within the gradient( segmentLength=gradientThickness/gradientDiscretization); use sensible values to not overload the printer
 ###############################################################
+
+
+class Section(Enum):
+    NOTHING = 0
+    INNER_WALL = 1
+    INFILL = 2
 
 
 def dist(x1, y1, x2, y2, x3, y3): # calculate the distance of a point to line with non-infinite length
@@ -51,7 +58,7 @@ def mapRange( a, b, s):
 
 
 def main():
-    currentSection = 0  # 0 = nothing, 1 = inner wall, 2 = infill
+    currentSection = Section.NOTHING
     lastPosition = [[-10000, -10000]]
     gradientDiscretizationLength = gradientThickness/gradientDiscretization
 
@@ -62,20 +69,25 @@ def main():
                 perimeterSegments = []
             #Look for the definition of the inner contour
             if ";TYPE:WALL-INNER" in currentLine:
-                currentSection = 1
+                currentSection = Section.INNER_WALL
                 #perimeterSegments = []
             #line with extrusion
-            if currentSection == 1 and "G1" in currentLine and " X" in currentLine and "Y" in currentLine and "E" in currentLine:
+            if (currentSection == Section.INNER_WALL
+                    and "G1" in currentLine
+                    and " X" in currentLine
+                    and "Y" in currentLine
+                    and "E" in currentLine):
+
                     perimeterSegments.append([getXY(currentLine), lastPosition[0]])
             #Inner wall definition end?
             if ";TYPE:WALL-OUTER" in currentLine:
-                currentSection = 0
+                currentSection = Section.NOTHING
             #Infill segment
             if ";TYPE:FILL" in currentLine:
-                currentSection = 2
+                currentSection = Section.INFILL
                 outputFile.write(currentLine)
                 continue
-            if currentSection == 2:
+            if currentSection == Section.INFILL:
                 if "F" in currentLine and "G1" in currentLine:
                     outputFile.write("G1 F" + re.findall("[F]\d*\.*\d*",currentLine)[0][1:] + "\n")
                 if "E" in currentLine and "G1" in currentLine and " X" in currentLine and "Y" in currentLine:
@@ -145,7 +157,7 @@ def main():
                             outputFile.write(outPutLine)
                             writtenToFile = 1
                 if ";" in currentLine:
-                    currentSection = 0
+                    currentSection = Section.NOTHING
 
 
             #line with move
