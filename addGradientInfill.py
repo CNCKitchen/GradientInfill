@@ -10,10 +10,10 @@
 import re
 
 ################ EDIT this section for your creation parameters
-gcodeFile = open("bending_beam_30p.gcode", "r")
-outputFile = open("output_bending_beam_30p.gcode","w+")
+gcodeFile = open("cloverleaf_wHole_gyroid.gcode", "r")
+outputFile = open("BOWDEN_cloverleaf_wHole_gyroid.gcode","w+")
 
-infillType = 2 # 1 = infill with small segments like honeycomb or gyroid; 2 = linear infill like rectilinear or trianges
+infillType = 1 # 1 = infill with small segments like honeycomb or gyroid; 2 = linear infill like rectilinear or triangles
 
 maxFlow = 350 #maximum extrusion flow
 minFlow = 50 #minimum extrusion flow
@@ -76,7 +76,7 @@ for currentLine in gcodeFile:
     if currentSection == 2:
         if "F" in currentLine and "G1" in currentLine:
             outputFile.write("G1 F" + re.findall("[F]\d*\.*\d*",currentLine)[0][1:] + "\n")
-        if "E" in currentLine and "G1" in currentLine:
+        if "E" in currentLine and "G1" in currentLine and " X" in currentLine and "Y" in currentLine:
             currentPosition = getXY(currentLine)
             #linear infill
             if infillType == 2:
@@ -147,7 +147,7 @@ for currentLine in gcodeFile:
                 
             
     #line with move
-    if " X" in currentLine and " Y" in currentLine:
+    if " X" in currentLine and " Y" in currentLine and ("G1" in currentLine or "G0" in currentLine):
         lastPosition[0] = getXY(currentLine)
     
     #write uneditedLine
