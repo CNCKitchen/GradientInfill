@@ -10,11 +10,17 @@
 import re
 from enum import Enum
 
+
+class InfillType(Enum):
+    SMALL_SEGMENTS = 1  # infill with small segments like honeycomb or gyroid
+    LINEAR = 2  # linear infill like rectilinear or triangles
+
+
 ################ EDIT this section for your creation parameters
 INPUT_FILE_NAME = "cloverleaf_wHole_gyroid.gcode"
 OUTPUT_FILE_NAME = "BOWDEN_cloverleaf_wHole_gyroid.gcode"
 
-infillType = 1 # 1 = infill with small segments like honeycomb or gyroid; 2 = linear infill like rectilinear or triangles
+infillType = InfillType.SMALL_SEGMENTS
 
 maxFlow = 350 #maximum extrusion flow
 minFlow = 50 #minimum extrusion flow
@@ -92,8 +98,8 @@ def main():
                     outputFile.write("G1 F" + re.findall("[F]\d*\.*\d*",currentLine)[0][1:] + "\n")
                 if "E" in currentLine and "G1" in currentLine and " X" in currentLine and "Y" in currentLine:
                     currentPosition = getXY(currentLine)
-                    #linear infill
-                    if infillType == 2:
+
+                    if infillType == InfillType.LINEAR:
                         #find extrusion length
                         splitLine = currentLine.split(" ")
                         for element in splitLine:
@@ -134,8 +140,8 @@ def main():
                             outputFile.write(outPutLine)
                         writtenToFile = 1
 
-                    #gyroid or honeycomb
-                    if infillType == 1:
+                    # gyroid or honeycomb
+                    if infillType == InfillType.SMALL_SEGMENTS:
                         inbetweenPoint = [lastPosition[0][0] + (currentPosition[0] - lastPosition[0][0])/2, lastPosition[0][1] + (currentPosition[1] - lastPosition[0][1])/2]
                         #shortest distance from any inner perimeter
                         shortestDistance = 10000
