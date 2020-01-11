@@ -13,7 +13,7 @@ import re
 gcodeFile = open("bending_beam_30p.gcode", "r")
 outputFile = open("output_bending_beam_30p.gcode","w+")
 
-infillType = 2 # 0 = nothing, 1 = inner wall, 2 = infill
+infillType = 2 # 1 = infill with small segments like honeycomb or gyroid; 2 = linear infill like rectilinear or trianges
 
 maxFlow = 350 #maximum extrusion flow
 minFlow = 50 #minimum extrusion flow
@@ -23,7 +23,7 @@ gradientDiscretization = 4 #only appicable for linear infills; number of segemnt
 
 
 #General variables
-currentSection = 0
+currentSection = 0 # 0 = nothing, 1 = inner wall, 2 = infill
 lastPosition = [[-10000,-10000]]
 gradientDiscretizationLength = gradientThickness/gradientDiscretization
 
