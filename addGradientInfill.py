@@ -63,6 +63,10 @@ def mapRange( a, b, s):
     return  b1 + ((s - a1) * (b2 - b1) / (a2 - a1))
 
 
+def get_extrusion_command(x, y, extrusion):
+    return "G1 X{} Y{} E{}\n".format(round(x, 3), round(y, 3), round(extrusion, 5))
+
+
 def main():
     currentSection = Section.NOTHING
     lastPosition = [[-10000, -10000]]
@@ -95,7 +99,7 @@ def main():
                 continue
             if currentSection == Section.INFILL:
                 if "F" in currentLine and "G1" in currentLine:
-                    outputFile.write("G1 F" + re.findall(r"[F]\d*\.*\d*", currentLine)[0][1:] + "\n")
+                    outputFile.write("G1 F{}\n".format(re.findall(r"[F]\d*\.*\d*", currentLine)[0][1:]))
                 if "E" in currentLine and "G1" in currentLine and " X" in currentLine and "Y" in currentLine:
                     currentPosition = getXY(currentLine)
 
@@ -120,14 +124,26 @@ def main():
                                     if distance < shortestDistance:
                                         shortestDistance = distance
                                 if shortestDistance < gradientThickness:
-                                    outputFile.write("G1 X" + str(round(segmentEnd[0],3)) + " Y" + str(round(segmentEnd[1],3)) + " E" + str(round(extrusionLengthPerSegment * mapRange((0, gradientThickness), (maxFlow/100, minFlow/100), shortestDistance),5)) + "\n")
+                                    segmentExtrusion = extrusionLengthPerSegment * mapRange(
+                                        (0, gradientThickness),
+                                        (maxFlow/100, minFlow/100),
+                                        shortestDistance
+                                    )
                                 else:
-                                    outputFile.write("G1 X" + str(round(segmentEnd[0],3)) + " Y" + str(round(segmentEnd[1],3)) + " E" + str(round(extrusionLengthPerSegment * minFlow/100,5)) + "\n" )
-                                lastPosition[0] = [segmentEnd[0],segmentEnd[1]]
+                                    segmentExtrusion = extrusionLengthPerSegment * minFlow / 100
+
+                                outputFile.write(get_extrusion_command(segmentEnd[0], segmentEnd[1], segmentExtrusion))
+
+                                lastPosition[0] = [segmentEnd[0], segmentEnd[1]]
                             #MissingSegment
                             segmentLengthRatio = ((lastPosition[0][0]-currentPosition[0])**2+(lastPosition[0][1]-currentPosition[1])**2)**.5 / segmentLength
                             # inbetweenPoint = [lastPosition[0][0] + (currentPosition[0] - lastPosition[0][0])/2, lastPosition[0][1] + (currentPosition[1] - lastPosition[0][1])/2]
-                            outputFile.write("G1 X" + str(round(currentPosition[0],3)) + " Y" + str(round(currentPosition[1],3)) + " E" + str(round(segmentLengthRatio * extrusionLength * maxFlow/100,5)) + "\n")
+
+                            outputFile.write(get_extrusion_command(
+                                currentPosition[0],
+                                currentPosition[1],
+                                segmentLengthRatio * extrusionLength * maxFlow / 100
+                            ))
                         else:
                             splitLine = currentLine.split(" ")
                             outPutLine = ""
