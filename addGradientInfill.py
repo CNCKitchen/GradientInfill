@@ -53,8 +53,8 @@ def dist(x1, y1, x2, y2, x3, y3): # calculate the distance of a point to line wi
 
 
 def getXY(currentLine): #Returns the X and Y value of the current line
-    elementX = re.findall("[X]\d*\.*\d*",currentLine)[0][1:]
-    elementY = re.findall("[Y]\d*\.*\d*",currentLine)[0][1:]
+    elementX = re.findall(r"[X]\d*\.*\d*", currentLine)[0][1:]
+    elementY = re.findall(r"[Y]\d*\.*\d*", currentLine)[0][1:]
     return [float(elementX),float(elementY)]
 
 
@@ -95,7 +95,7 @@ def main():
                 continue
             if currentSection == Section.INFILL:
                 if "F" in currentLine and "G1" in currentLine:
-                    outputFile.write("G1 F" + re.findall("[F]\d*\.*\d*",currentLine)[0][1:] + "\n")
+                    outputFile.write("G1 F" + re.findall(r"[F]\d*\.*\d*", currentLine)[0][1:] + "\n")
                 if "E" in currentLine and "G1" in currentLine and " X" in currentLine and "Y" in currentLine:
                     currentPosition = getXY(currentLine)
 
