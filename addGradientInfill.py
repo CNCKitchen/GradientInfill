@@ -18,7 +18,7 @@ infillType = 1 # 1 = infill with small segments like honeycomb or gyroid; 2 = li
 maxFlow = 350 #maximum extrusion flow
 minFlow = 50 #minimum extrusion flow
 gradientThickness = 6 #thickness of the gradient (max to min) in mm
-gradientDiscretization = 4 #only appicable for linear infills; number of segemnts within the gradient( segmentLength=gradientThickness/gradientDiscretization); use sensible values to not overload the printer
+gradientDiscretization = 4 #only applicable for linear infills; number of segments within the gradient( segmentLength=gradientThickness/gradientDiscretization); use sensible values to not overload the printer
 ###############################################################
 
 
@@ -28,7 +28,7 @@ lastPosition = [[-10000,-10000]]
 gradientDiscretizationLength = gradientThickness/gradientDiscretization
 
 
-def dist(x1, y1, x2, y2, x3, y3): # calculate the diestance of a point to line with non-infinite length
+def dist(x1, y1, x2, y2, x3, y3): # calculate the distance of a point to line with non-infinite length
     px = x2-x1
     py = y2-y1
     norm = px*px + py*py
@@ -88,10 +88,10 @@ for currentLine in gcodeFile:
                 segmentLength = ((lastPosition[0][0]-currentPosition[0])**2+(lastPosition[0][1]-currentPosition[1])**2)**.5
                 segmentSteps = segmentLength / gradientDiscretizationLength
                 extrusionLengthPerSegment = extrusionLength / segmentSteps
-                segementDirection = [(currentPosition[0]-lastPosition[0][0])/segmentLength*gradientDiscretizationLength,(currentPosition[1]-lastPosition[0][1])/segmentLength*gradientDiscretizationLength]
+                segmentDirection = [(currentPosition[0] - lastPosition[0][0]) / segmentLength * gradientDiscretizationLength, (currentPosition[1] - lastPosition[0][1]) / segmentLength * gradientDiscretizationLength]
                 if segmentSteps >= 2:
                     for step in range(int(segmentSteps)):
-                        segmentEnd = [lastPosition[0][0] + segementDirection[0], lastPosition[0][1] + segementDirection[1]]
+                        segmentEnd = [lastPosition[0][0] + segmentDirection[0], lastPosition[0][1] + segmentDirection[1]]
                         inbetweenPoint = [lastPosition[0][0] + (segmentEnd[0] - lastPosition[0][0])/2, lastPosition[0][1] + (segmentEnd[1] - lastPosition[0][1])/2]
                         #shortest distance from any inner perimeter
                         shortestDistance = 10000
