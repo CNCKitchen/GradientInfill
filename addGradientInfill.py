@@ -67,6 +67,26 @@ def get_extrusion_command(x, y, extrusion):
     return "G1 X{} Y{} E{}\n".format(round(x, 3), round(y, 3), round(extrusion, 5))
 
 
+def is_begin_layer_line(line):
+    return line.startswith(";LAYER:")
+
+
+def is_begin_inner_wall_line(line):
+    return line.startswith(";TYPE:WALL-INNER")
+
+
+def is_end_inner_wall_line(line):
+    return line.startswith(";TYPE:WALL-OUTER")
+
+
+def is_extrusion_line(line):
+    return "G1" in line and " X" in line and "Y" in line and "E" in line
+
+
+def is_begin_infill_segment_line(line):
+    return line.startswith(";TYPE:FILL")
+
+
 def main():
     currentSection = Section.NOTHING
     lastPosition = [[-10000, -10000]]
@@ -75,28 +95,23 @@ def main():
     with open(INPUT_FILE_NAME, "r") as gcodeFile, open(OUTPUT_FILE_NAME, "w+") as outputFile:
         for currentLine in gcodeFile:
             writtenToFile = 0
-            if ";LAYER:" in currentLine:
+            if is_begin_layer_line(currentLine):
                 perimeterSegments = []
-            #Look for the definition of the inner contour
-            if ";TYPE:WALL-INNER" in currentLine:
-                currentSection = Section.INNER_WALL
-                #perimeterSegments = []
-            #line with extrusion
-            if (currentSection == Section.INNER_WALL
-                    and "G1" in currentLine
-                    and " X" in currentLine
-                    and "Y" in currentLine
-                    and "E" in currentLine):
 
-                    perimeterSegments.append([getXY(currentLine), lastPosition[0]])
-            #Inner wall definition end?
-            if ";TYPE:WALL-OUTER" in currentLine:
+            if is_begin_inner_wall_line(currentLine):
+                currentSection = Section.INNER_WALL
+
+            if currentSection == Section.INNER_WALL and is_extrusion_line(currentLine):
+                perimeterSegments.append([getXY(currentLine), lastPosition[0]])
+
+            if is_end_inner_wall_line(currentLine):
                 currentSection = Section.NOTHING
-            #Infill segment
-            if ";TYPE:FILL" in currentLine:
+
+            if is_begin_infill_segment_line(currentLine):
                 currentSection = Section.INFILL
                 outputFile.write(currentLine)
                 continue
+
             if currentSection == Section.INFILL:
                 if "F" in currentLine and "G1" in currentLine:
                     outputFile.write("G1 F{}\n".format(re.findall(r"[F]\d*\.*\d*", currentLine)[0][1:]))
