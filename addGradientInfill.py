@@ -93,7 +93,7 @@ def is_begin_infill_segment_line(line):
 
 def main():
     currentSection = Section.NOTHING
-    lastPosition = [[-10000, -10000]]
+    lastPosition = Point2D(-10000, -10000)
     gradientDiscretizationLength = gradientThickness/gradientDiscretization
 
     with open(INPUT_FILE_NAME, "r") as gcodeFile, open(OUTPUT_FILE_NAME, "w+") as outputFile:
@@ -106,7 +106,7 @@ def main():
                 currentSection = Section.INNER_WALL
 
             if currentSection == Section.INNER_WALL and is_extrusion_line(currentLine):
-                perimeterSegments.append([getXY(currentLine), lastPosition[0]])
+                perimeterSegments.append([getXY(currentLine), lastPosition])
 
             if is_end_inner_wall_line(currentLine):
                 currentSection = Section.NOTHING
@@ -128,14 +128,14 @@ def main():
                         for element in splitLine:
                             if "E" in element:
                                 extrusionLength = float(element[1:len(element)])
-                        segmentLength = ((lastPosition[0][0]-currentPosition.x)**2+(lastPosition[0][1]-currentPosition.y)**2)**.5
+                        segmentLength = ((lastPosition.x-currentPosition.x)**2+(lastPosition.y-currentPosition.y)**2)**.5
                         segmentSteps = segmentLength / gradientDiscretizationLength
                         extrusionLengthPerSegment = extrusionLength / segmentSteps
-                        segmentDirection = [(currentPosition.x - lastPosition[0][0]) / segmentLength * gradientDiscretizationLength, (currentPosition.y - lastPosition[0][1]) / segmentLength * gradientDiscretizationLength]
+                        segmentDirection = [(currentPosition.x - lastPosition.x) / segmentLength * gradientDiscretizationLength, (currentPosition.y - lastPosition.y) / segmentLength * gradientDiscretizationLength]
                         if segmentSteps >= 2:
                             for step in range(int(segmentSteps)):
-                                segmentEnd = [lastPosition[0][0] + segmentDirection[0], lastPosition[0][1] + segmentDirection[1]]
-                                inbetweenPoint = [lastPosition[0][0] + (segmentEnd[0] - lastPosition[0][0])/2, lastPosition[0][1] + (segmentEnd[1] - lastPosition[0][1])/2]
+                                segmentEnd = [lastPosition.x + segmentDirection[0], lastPosition.y + segmentDirection[1]]
+                                inbetweenPoint = [lastPosition.x + (segmentEnd[0] - lastPosition.x)/2, lastPosition.y + (segmentEnd[1] - lastPosition.y)/2]
                                 #shortest distance from any inner perimeter
                                 shortestDistance = 10000
                                 for perimeterSegment in perimeterSegments:
@@ -153,9 +153,9 @@ def main():
 
                                 outputFile.write(get_extrusion_command(segmentEnd[0], segmentEnd[1], segmentExtrusion))
 
-                                lastPosition[0] = [segmentEnd[0], segmentEnd[1]]
+                                lastPosition = Point2D(segmentEnd[0], segmentEnd[1])
                             #MissingSegment
-                            segmentLengthRatio = ((lastPosition[0][0]-currentPosition.x)**2+(lastPosition[0][1]-currentPosition.y)**2)**.5 / segmentLength
+                            segmentLengthRatio = ((lastPosition.x-currentPosition.x)**2+(lastPosition.y-currentPosition.y)**2)**.5 / segmentLength
 
                             outputFile.write(get_extrusion_command(
                                 currentPosition.x,
@@ -176,7 +176,7 @@ def main():
 
                     # gyroid or honeycomb
                     if infillType == InfillType.SMALL_SEGMENTS:
-                        inbetweenPoint = [lastPosition[0][0] + (currentPosition.x - lastPosition[0][0])/2, lastPosition[0][1] + (currentPosition.y - lastPosition[0][1])/2]
+                        inbetweenPoint = [lastPosition.x + (currentPosition.x - lastPosition.x)/2, lastPosition.y + (currentPosition.y - lastPosition.y)/2]
                         #shortest distance from any inner perimeter
                         shortestDistance = 10000
                         for perimeterSegment in perimeterSegments:
@@ -202,7 +202,7 @@ def main():
 
             #line with move
             if " X" in currentLine and " Y" in currentLine and ("G1" in currentLine or "G0" in currentLine):
-                lastPosition[0] = getXY(currentLine)
+                lastPosition = getXY(currentLine)
 
             #write uneditedLine
             if writtenToFile == 0:
