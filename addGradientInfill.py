@@ -134,8 +134,8 @@ def main():
                         segmentDirection = [(currentPosition.x - lastPosition.x) / segmentLength * gradientDiscretizationLength, (currentPosition.y - lastPosition.y) / segmentLength * gradientDiscretizationLength]
                         if segmentSteps >= 2:
                             for step in range(int(segmentSteps)):
-                                segmentEnd = [lastPosition.x + segmentDirection[0], lastPosition.y + segmentDirection[1]]
-                                inbetweenPoint = [lastPosition.x + (segmentEnd[0] - lastPosition.x)/2, lastPosition.y + (segmentEnd[1] - lastPosition.y)/2]
+                                segmentEnd = Point2D(lastPosition.x + segmentDirection[0], lastPosition.y + segmentDirection[1])
+                                inbetweenPoint = [lastPosition.x + (segmentEnd.x - lastPosition.x)/2, lastPosition.y + (segmentEnd.y - lastPosition.y)/2]
                                 #shortest distance from any inner perimeter
                                 shortestDistance = 10000
                                 for perimeterSegment in perimeterSegments:
@@ -151,9 +151,9 @@ def main():
                                 else:
                                     segmentExtrusion = extrusionLengthPerSegment * minFlow / 100
 
-                                outputFile.write(get_extrusion_command(segmentEnd[0], segmentEnd[1], segmentExtrusion))
+                                outputFile.write(get_extrusion_command(segmentEnd.x, segmentEnd.y, segmentExtrusion))
 
-                                lastPosition = Point2D(segmentEnd[0], segmentEnd[1])
+                                lastPosition = segmentEnd
                             #MissingSegment
                             segmentLengthRatio = ((lastPosition.x-currentPosition.x)**2+(lastPosition.y-currentPosition.y)**2)**.5 / segmentLength
 
