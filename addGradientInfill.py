@@ -11,37 +11,36 @@ import re
 from collections import namedtuple
 from enum import Enum
 
-
 class InfillType(Enum):
     SMALL_SEGMENTS = 1  # infill with small segments like honeycomb or gyroid
     LINEAR = 2  # linear infill like rectilinear or triangles
 
-
 Point2D = namedtuple('Point2D', 'x y')
 Segment = namedtuple('Segment', 'point1 point2')
 
-
 ################ EDIT this section for your creation parameters
+
 INPUT_FILE_NAME = "cloverleaf_wHole_gyroid.gcode"
 OUTPUT_FILE_NAME = "BOWDEN_cloverleaf_wHole_gyroid.gcode"
 
 infillType = InfillType.SMALL_SEGMENTS
 
-maxFlow = 350 #maximum extrusion flow
-minFlow = 50 #minimum extrusion flow
-gradientThickness = 6 #thickness of the gradient (max to min) in mm
-gradientDiscretization = 4 #only applicable for linear infills; number of segments within the gradient( segmentLength=gradientThickness/gradientDiscretization); use sensible values to not overload the printer
-###############################################################
+maxFlow = 350              # maximum extrusion flow
+minFlow = 50               # minimum extrusion flow
+gradientThickness = 6      # thickness of the gradient (max to min) in mm
+gradientDiscretization = 4 # only applicable for linear infills; number of segments within the 
+                           # gradient( segmentLength=gradientThickness/gradientDiscretization); 
+                           # use sensible values to not overload the printer
 
+###############################################################
 
 class Section(Enum):
     NOTHING = 0
     INNER_WALL = 1
     INFILL = 2
 
-
 def dist(segment, point):
-    """Calculate the distance of a point to line with non-infinite length"""
+    # Calculate the distance from a point to a line with finite length
     px = segment.point2.x - segment.point1.x
     py = segment.point2.y - segment.point1.y
     norm = px*px + py*py
@@ -56,7 +55,6 @@ def dist(segment, point):
     dy = y - point.y
     return (dx*dx + dy*dy) ** .5
 
-
 def get_points_distance(point1, point2):
     return ((point1.x - point2.x)**2 + (point1.y - point2.y)**2)**0.5
 
@@ -65,18 +63,15 @@ def min_distance_from_segment(segment, segments):
     middlePoint = Point2D((segment.point1.x + segment.point2.x) / 2, (segment.point1.y + segment.point2.y) / 2)
     return min(dist(s, middlePoint) for s in segments)
 
-
 def getXY(currentLine):
-    """Returns the X and Y value of the current line"""
+    # Returns the X and Y value of the current line
     elementX = re.search(r"X(\d*\.?\d*)", currentLine).group(1)
     elementY = re.search(r"Y(\d*\.?\d*)", currentLine).group(1)
     return Point2D(float(elementX), float(elementY))
 
-
 def mapRange( a, b, s):
     (a1, a2), (b1, b2) = a, b
     return  b1 + ((s - a1) * (b2 - b1) / (a2 - a1))
-
 
 def get_extrusion_command(x, y, extrusion):
     return "G1 X{} Y{} E{}\n".format(round(x, 3), round(y, 3), round(extrusion, 5))
@@ -85,22 +80,17 @@ def get_extrusion_command(x, y, extrusion):
 def is_begin_layer_line(line):
     return line.startswith(";LAYER:")
 
-
 def is_begin_inner_wall_line(line):
     return line.startswith(";TYPE:WALL-INNER")
-
 
 def is_end_inner_wall_line(line):
     return line.startswith(";TYPE:WALL-OUTER")
 
-
 def is_extrusion_line(line):
     return "G1" in line and " X" in line and "Y" in line and "E" in line
 
-
 def is_begin_infill_segment_line(line):
     return line.startswith(";TYPE:FILL")
-
 
 def main():
     currentSection = Section.NOTHING
@@ -216,7 +206,6 @@ def main():
             #write uneditedLine
             if writtenToFile == 0:
                 outputFile.write(currentLine)
-
 
 if __name__ == '__main__':
     main()
