@@ -18,6 +18,7 @@ class InfillType(Enum):
 
 
 Point2D = namedtuple('Point2D', 'x y')
+Segment = namedtuple('Segment', 'point1 point2')
 
 
 ################ EDIT this section for your creation parameters
@@ -39,24 +40,25 @@ class Section(Enum):
     INFILL = 2
 
 
-def dist(x1, y1, x2, y2, x3, y3): # calculate the distance of a point to line with non-infinite length
-    px = x2-x1
-    py = y2-y1
+def dist(segment, point):
+    """Calculate the distance of a point to line with non-infinite length"""
+    px = segment.point2.x - segment.point1.x
+    py = segment.point2.y - segment.point1.y
     norm = px*px + py*py
-    u =  ((x3 - x1) * px + (y3 - y1) * py) / float(norm)
+    u = ((point.x - segment.point1.x) * px + (point.y - segment.point1.y) * py) / float(norm)
     if u > 1:
         u = 1
     elif u < 0:
         u = 0
-    x = x1 + u * px
-    y = y1 + u * py
-    dx = x - x3
-    dy = y - y3
-    dist = (dx*dx + dy*dy)**.5
-    return dist
+    x = segment.point1.x + u * px
+    y = segment.point1.y + u * py
+    dx = x - point.x
+    dy = y - point.y
+    return (dx*dx + dy*dy) ** .5
 
 
-def getXY(currentLine): #Returns the X and Y value of the current line
+def getXY(currentLine):
+    """Returns the X and Y value of the current line"""
     elementX = re.search(r"X(\d*\.?\d*)", currentLine).group(1)
     elementY = re.search(r"Y(\d*\.?\d*)", currentLine).group(1)
     return Point2D(float(elementX), float(elementY))
@@ -106,7 +108,7 @@ def main():
                 currentSection = Section.INNER_WALL
 
             if currentSection == Section.INNER_WALL and is_extrusion_line(currentLine):
-                perimeterSegments.append([getXY(currentLine), lastPosition])
+                perimeterSegments.append(Segment(getXY(currentLine), lastPosition))
 
             if is_end_inner_wall_line(currentLine):
                 currentSection = Section.NOTHING
@@ -145,11 +147,7 @@ def main():
                                 #shortest distance from any inner perimeter
                                 shortestDistance = 10000
                                 for perimeterSegment in perimeterSegments:
-                                    distance = dist(
-                                        perimeterSegment[0].x, perimeterSegment[0].y,
-                                        perimeterSegment[1].x, perimeterSegment[1].y,
-                                        inbetweenPoint.x, inbetweenPoint.y
-                                    )
+                                    distance = dist(perimeterSegment, inbetweenPoint)
                                     if distance < shortestDistance:
                                         shortestDistance = distance
                                 if shortestDistance < gradientThickness:
@@ -193,11 +191,7 @@ def main():
                         #shortest distance from any inner perimeter
                         shortestDistance = 10000
                         for perimeterSegment in perimeterSegments:
-                            distance = dist(
-                                perimeterSegment[0].x, perimeterSegment[0].y,
-                                perimeterSegment[1].x, perimeterSegment[1].y,
-                                inbetweenPoint.x, inbetweenPoint.y
-                            )
+                            distance = dist(perimeterSegment, inbetweenPoint)
                             if distance < shortestDistance:
                                 shortestDistance = distance
                         newE = 0
