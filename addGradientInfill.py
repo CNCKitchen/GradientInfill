@@ -8,12 +8,16 @@
 ##################################################
 
 import re
+from collections import namedtuple
 from enum import Enum
 
 
 class InfillType(Enum):
     SMALL_SEGMENTS = 1  # infill with small segments like honeycomb or gyroid
     LINEAR = 2  # linear infill like rectilinear or triangles
+
+
+Point2D = namedtuple('Point2D', 'x y')
 
 
 ################ EDIT this section for your creation parameters
@@ -55,7 +59,7 @@ def dist(x1, y1, x2, y2, x3, y3): # calculate the distance of a point to line wi
 def getXY(currentLine): #Returns the X and Y value of the current line
     elementX = re.search(r"X(\d*\.?\d*)", currentLine).group(1)
     elementY = re.search(r"Y(\d*\.?\d*)", currentLine).group(1)
-    return [float(elementX), float(elementY)]
+    return Point2D(float(elementX), float(elementY))
 
 
 def mapRange( a, b, s):
@@ -124,10 +128,10 @@ def main():
                         for element in splitLine:
                             if "E" in element:
                                 extrusionLength = float(element[1:len(element)])
-                        segmentLength = ((lastPosition[0][0]-currentPosition[0])**2+(lastPosition[0][1]-currentPosition[1])**2)**.5
+                        segmentLength = ((lastPosition[0][0]-currentPosition.x)**2+(lastPosition[0][1]-currentPosition.y)**2)**.5
                         segmentSteps = segmentLength / gradientDiscretizationLength
                         extrusionLengthPerSegment = extrusionLength / segmentSteps
-                        segmentDirection = [(currentPosition[0] - lastPosition[0][0]) / segmentLength * gradientDiscretizationLength, (currentPosition[1] - lastPosition[0][1]) / segmentLength * gradientDiscretizationLength]
+                        segmentDirection = [(currentPosition.x - lastPosition[0][0]) / segmentLength * gradientDiscretizationLength, (currentPosition.y - lastPosition[0][1]) / segmentLength * gradientDiscretizationLength]
                         if segmentSteps >= 2:
                             for step in range(int(segmentSteps)):
                                 segmentEnd = [lastPosition[0][0] + segmentDirection[0], lastPosition[0][1] + segmentDirection[1]]
@@ -151,12 +155,11 @@ def main():
 
                                 lastPosition[0] = [segmentEnd[0], segmentEnd[1]]
                             #MissingSegment
-                            segmentLengthRatio = ((lastPosition[0][0]-currentPosition[0])**2+(lastPosition[0][1]-currentPosition[1])**2)**.5 / segmentLength
-                            # inbetweenPoint = [lastPosition[0][0] + (currentPosition[0] - lastPosition[0][0])/2, lastPosition[0][1] + (currentPosition[1] - lastPosition[0][1])/2]
+                            segmentLengthRatio = ((lastPosition[0][0]-currentPosition.x)**2+(lastPosition[0][1]-currentPosition.y)**2)**.5 / segmentLength
 
                             outputFile.write(get_extrusion_command(
-                                currentPosition[0],
-                                currentPosition[1],
+                                currentPosition.x,
+                                currentPosition.y,
                                 segmentLengthRatio * extrusionLength * maxFlow / 100
                             ))
                         else:
@@ -173,7 +176,7 @@ def main():
 
                     # gyroid or honeycomb
                     if infillType == InfillType.SMALL_SEGMENTS:
-                        inbetweenPoint = [lastPosition[0][0] + (currentPosition[0] - lastPosition[0][0])/2, lastPosition[0][1] + (currentPosition[1] - lastPosition[0][1])/2]
+                        inbetweenPoint = [lastPosition[0][0] + (currentPosition.x - lastPosition[0][0])/2, lastPosition[0][1] + (currentPosition.y - lastPosition[0][1])/2]
                         #shortest distance from any inner perimeter
                         shortestDistance = 10000
                         for perimeterSegment in perimeterSegments:
