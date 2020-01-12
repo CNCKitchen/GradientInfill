@@ -57,6 +57,10 @@ def dist(segment, point):
     return (dx*dx + dy*dy) ** .5
 
 
+def get_points_distance(point1, point2):
+    return ((point1.x - point2.x)**2 + (point1.y - point2.y)**2)**0.5
+
+
 def getXY(currentLine):
     """Returns the X and Y value of the current line"""
     elementX = re.search(r"X(\d*\.?\d*)", currentLine).group(1)
@@ -130,7 +134,7 @@ def main():
                         for element in splitLine:
                             if "E" in element:
                                 extrusionLength = float(element[1:len(element)])
-                        segmentLength = ((lastPosition.x-currentPosition.x)**2+(lastPosition.y-currentPosition.y)**2)**.5
+                        segmentLength = get_points_distance(lastPosition, currentPosition)
                         segmentSteps = segmentLength / gradientDiscretizationLength
                         extrusionLengthPerSegment = extrusionLength / segmentSteps
                         segmentDirection = Point2D(
@@ -163,7 +167,7 @@ def main():
 
                                 lastPosition = segmentEnd
                             #MissingSegment
-                            segmentLengthRatio = ((lastPosition.x-currentPosition.x)**2+(lastPosition.y-currentPosition.y)**2)**.5 / segmentLength
+                            segmentLengthRatio = get_points_distance(lastPosition, currentPosition) / segmentLength
 
                             outputFile.write(get_extrusion_command(
                                 currentPosition.x,
