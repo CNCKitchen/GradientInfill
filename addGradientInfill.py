@@ -53,9 +53,9 @@ def dist(x1, y1, x2, y2, x3, y3): # calculate the distance of a point to line wi
 
 
 def getXY(currentLine): #Returns the X and Y value of the current line
-    elementX = re.findall(r"[X]\d*\.*\d*", currentLine)[0][1:]
-    elementY = re.findall(r"[Y]\d*\.*\d*", currentLine)[0][1:]
-    return [float(elementX),float(elementY)]
+    elementX = re.search(r"X(\d*\.?\d*)", currentLine).group(1)
+    elementY = re.search(r"Y(\d*\.?\d*)", currentLine).group(1)
+    return [float(elementX), float(elementY)]
 
 
 def mapRange( a, b, s):
@@ -114,7 +114,7 @@ def main():
 
             if currentSection == Section.INFILL:
                 if "F" in currentLine and "G1" in currentLine:
-                    outputFile.write("G1 F{}\n".format(re.findall(r"[F]\d*\.*\d*", currentLine)[0][1:]))
+                    outputFile.write("G1 F{}\n".format(re.search(r"F(\d*\.?\d*)", currentLine).group(1)))
                 if "E" in currentLine and "G1" in currentLine and " X" in currentLine and "Y" in currentLine:
                     currentPosition = getXY(currentLine)
 
