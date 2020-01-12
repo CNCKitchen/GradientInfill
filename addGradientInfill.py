@@ -131,15 +131,25 @@ def main():
                         segmentLength = ((lastPosition.x-currentPosition.x)**2+(lastPosition.y-currentPosition.y)**2)**.5
                         segmentSteps = segmentLength / gradientDiscretizationLength
                         extrusionLengthPerSegment = extrusionLength / segmentSteps
-                        segmentDirection = [(currentPosition.x - lastPosition.x) / segmentLength * gradientDiscretizationLength, (currentPosition.y - lastPosition.y) / segmentLength * gradientDiscretizationLength]
+                        segmentDirection = Point2D(
+                            (currentPosition.x - lastPosition.x) / segmentLength * gradientDiscretizationLength,
+                            (currentPosition.y - lastPosition.y) / segmentLength * gradientDiscretizationLength
+                        )
                         if segmentSteps >= 2:
                             for step in range(int(segmentSteps)):
-                                segmentEnd = Point2D(lastPosition.x + segmentDirection[0], lastPosition.y + segmentDirection[1])
-                                inbetweenPoint = [lastPosition.x + (segmentEnd.x - lastPosition.x)/2, lastPosition.y + (segmentEnd.y - lastPosition.y)/2]
+                                segmentEnd = Point2D(lastPosition.x + segmentDirection.x, lastPosition.y + segmentDirection.y)
+                                inbetweenPoint = Point2D(
+                                    lastPosition.x + (segmentEnd.x - lastPosition.x) / 2,
+                                    lastPosition.y + (segmentEnd.y - lastPosition.y) / 2
+                                )
                                 #shortest distance from any inner perimeter
                                 shortestDistance = 10000
                                 for perimeterSegment in perimeterSegments:
-                                    distance = dist(perimeterSegment[0][0],perimeterSegment[0][1],perimeterSegment[1][0],perimeterSegment[1][1],inbetweenPoint[0], inbetweenPoint[1])
+                                    distance = dist(
+                                        perimeterSegment[0].x, perimeterSegment[0].y,
+                                        perimeterSegment[1].x, perimeterSegment[1].y,
+                                        inbetweenPoint.x, inbetweenPoint.y
+                                    )
                                     if distance < shortestDistance:
                                         shortestDistance = distance
                                 if shortestDistance < gradientThickness:
@@ -176,11 +186,18 @@ def main():
 
                     # gyroid or honeycomb
                     if infillType == InfillType.SMALL_SEGMENTS:
-                        inbetweenPoint = [lastPosition.x + (currentPosition.x - lastPosition.x)/2, lastPosition.y + (currentPosition.y - lastPosition.y)/2]
+                        inbetweenPoint = Point2D(
+                            lastPosition.x + (currentPosition.x - lastPosition.x) / 2,
+                            lastPosition.y + (currentPosition.y - lastPosition.y) / 2
+                        )
                         #shortest distance from any inner perimeter
                         shortestDistance = 10000
                         for perimeterSegment in perimeterSegments:
-                            distance = dist(perimeterSegment[0][0],perimeterSegment[0][1],perimeterSegment[1][0],perimeterSegment[1][1],inbetweenPoint[0], inbetweenPoint[1])
+                            distance = dist(
+                                perimeterSegment[0].x, perimeterSegment[0].y,
+                                perimeterSegment[1].x, perimeterSegment[1].y,
+                                inbetweenPoint.x, inbetweenPoint.y
+                            )
                             if distance < shortestDistance:
                                 shortestDistance = distance
                         newE = 0
