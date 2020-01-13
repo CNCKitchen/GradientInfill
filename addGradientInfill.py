@@ -25,14 +25,14 @@ Segment = namedtuple('Segment', 'point1 point2')
 INPUT_FILE_NAME = "cloverleaf_wHole_gyroid.gcode"
 OUTPUT_FILE_NAME = "BOWDEN_cloverleaf_wHole_gyroid.gcode"
 
-infillType = InfillType.SMALL_SEGMENTS
+INFILL_TYPE = InfillType.SMALL_SEGMENTS
 
-maxFlow = 350               # maximum extrusion flow
-minFlow = 50                # minimum extrusion flow
-gradientThickness = 6       # thickness of the gradient (max to min) in mm
-gradientDiscretization = 4  # only applicable for linear infills; number of segments within the 
-                            # gradient( segmentLength=gradientThickness/gradientDiscretization);
-                            # use sensible values to not overload the printer
+MAX_FLOW = 350               # maximum extrusion flow
+MIN_FLOW = 50                # minimum extrusion flow
+GRADIENT_THICKNESS = 6       # thickness of the gradient (max to min) in mm
+GRADIENT_DISCRETIZATION = 4  # only applicable for linear infills; number of segments within the
+                             # gradient( segmentLength=gradientThickness/gradientDiscretization);
+                             # use sensible values to not overload the printer
 
 # End edit
 
@@ -115,12 +115,13 @@ def is_begin_infill_segment_line(line):
     return line.startswith(";TYPE:FILL")
 
 
-def main():
+def process_gcode(input_file_name, output_file_name, infill_type, max_flow, min_flow, gradient_thickness,
+                  gradient_discretization):
     currentSection = Section.NOTHING
     lastPosition = Point2D(-10000, -10000)
-    gradientDiscretizationLength = gradientThickness/gradientDiscretization
+    gradientDiscretizationLength = gradient_thickness / gradient_discretization
 
-    with open(INPUT_FILE_NAME, "r") as gcodeFile, open(OUTPUT_FILE_NAME, "w+") as outputFile:
+    with open(input_file_name, "r") as gcodeFile, open(output_file_name, "w+") as outputFile:
         for currentLine in gcodeFile:
             writtenToFile = 0
             if is_begin_layer_line(currentLine):
@@ -149,7 +150,7 @@ def main():
                     currentPosition = getXY(currentLine)
                     splitLine = currentLine.split(" ")
 
-                    if infillType == InfillType.LINEAR:
+                    if infill_type == InfillType.LINEAR:
                         # find extrusion length
                         for element in splitLine:
                             if "E" in element:
@@ -170,14 +171,14 @@ def main():
                                 shortestDistance = min_distance_from_segment(
                                     Segment(lastPosition, segmentEnd), perimeterSegments
                                 )
-                                if shortestDistance < gradientThickness:
+                                if shortestDistance < gradient_thickness:
                                     segmentExtrusion = extrusionLengthPerSegment * mapRange(
-                                        (0, gradientThickness),
-                                        (maxFlow / 100, minFlow / 100),
+                                        (0, gradient_thickness),
+                                        (max_flow / 100, min_flow / 100),
                                         shortestDistance
                                     )
                                 else:
-                                    segmentExtrusion = extrusionLengthPerSegment * minFlow / 100
+                                    segmentExtrusion = extrusionLengthPerSegment * min_flow / 100
 
                                 outputFile.write(get_extrusion_command(segmentEnd.x, segmentEnd.y, segmentExtrusion))
 
@@ -188,13 +189,13 @@ def main():
                             outputFile.write(get_extrusion_command(
                                 currentPosition.x,
                                 currentPosition.y,
-                                segmentLengthRatio * extrusionLength * maxFlow / 100
+                                segmentLengthRatio * extrusionLength * max_flow / 100
                             ))
                         else:
                             outPutLine = ""
                             for element in splitLine:
                                 if "E" in element:
-                                    outPutLine = outPutLine + "E" + str(round(extrusionLength * maxFlow / 100, 5))
+                                    outPutLine = outPutLine + "E" + str(round(extrusionLength * max_flow / 100, 5))
                                 else:
                                     outPutLine = outPutLine + element + " "
                             outPutLine = outPutLine + "\n"
@@ -202,17 +203,17 @@ def main():
                         writtenToFile = 1
 
                     # gyroid or honeycomb
-                    if infillType == InfillType.SMALL_SEGMENTS:
+                    if infill_type == InfillType.SMALL_SEGMENTS:
                         shortestDistance = min_distance_from_segment(
                             Segment(lastPosition, currentPosition),
                             perimeterSegments
                         )
 
                         outPutLine = ""
-                        if shortestDistance < gradientThickness:
+                        if shortestDistance < gradient_thickness:
                             for element in splitLine:
                                 if "E" in element:
-                                    newE = float(element[1:len(element)]) * mapRange((0, gradientThickness), (maxFlow / 100, minFlow / 100), shortestDistance)
+                                    newE = float(element[1:len(element)]) * mapRange((0, gradient_thickness), (max_flow / 100, min_flow / 100), shortestDistance)
                                     outPutLine = outPutLine + "E" + str(round(newE, 5))
                                 else:
                                     outPutLine = outPutLine + element + " "
@@ -232,4 +233,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    process_gcode(INPUT_FILE_NAME, OUTPUT_FILE_NAME, INFILL_TYPE, MAX_FLOW, MIN_FLOW, GRADIENT_THICKNESS,
+                  GRADIENT_DISCRETIZATION)
