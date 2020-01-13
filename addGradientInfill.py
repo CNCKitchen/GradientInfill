@@ -35,7 +35,7 @@ MAX_FLOW = 350.0  # maximum extrusion flow
 MIN_FLOW = 50.0  # minimum extrusion flow
 GRADIENT_THICKNESS = 6.0  # thickness of the gradient (max to min) in mm
 GRADIENT_DISCRETIZATION = 4.0  # only applicable for linear infills; number of segments within the
-# gradient( segmentLength=gradientThickness/gradientDiscretization); use sensible values to not overload the printer
+# gradient(segmentLength=gradientThickness / gradientDiscretization); use sensible values to not overload the printer
 
 # End edit
 
@@ -220,8 +220,14 @@ def is_begin_infill_segment_line(line: str) -> bool:
 
 
 def process_gcode(
-    input_file_name, output_file_name, infill_type, max_flow, min_flow, gradient_thickness, gradient_discretization
-):
+    input_file_name: str,
+    output_file_name: str,
+    infill_type: InfillType,
+    max_flow: float,
+    min_flow: float,
+    gradient_thickness: float,
+    gradient_discretization: float,
+) -> None:
     """Parse input Gcode file and modify infill portions with an extrusion width gradient."""
     currentSection = Section.NOTHING
     lastPosition = Point2D(-10000, -10000)
@@ -346,4 +352,3 @@ if __name__ == '__main__':
     process_gcode(
         INPUT_FILE_NAME, OUTPUT_FILE_NAME, INFILL_TYPE, MAX_FLOW, MIN_FLOW, GRADIENT_THICKNESS, GRADIENT_DISCRETIZATION
     )
-
