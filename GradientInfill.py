@@ -417,13 +417,13 @@ class GradientInfill(Script):
                                 lines[line_index] = new_Line
                                 
                             else :
-                                outPutLine = "; GradientInfill segmentSteps < 2\n"
+                                outPutLine = ""
                                 for element in splitLine:
                                     if "E" in element:
                                         outPutLine = outPutLine + "E" + str(round(extrusionLength * max_flow / 100, 5))
                                     else:
                                         outPutLine = outPutLine + element + " "
-                                outPutLine = outPutLine + "\n"
+                                outPutLine = outPutLine # + "\n"
                                 lines[line_index] = outPutLine
                                 
                             # writtenToFile = 1
