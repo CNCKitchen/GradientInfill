@@ -271,33 +271,40 @@ class GradientInfill(Script):
             "version": 2,
             "settings":
             {
+                "gradientthickness":
+                {
+                    "label": "Gradient Distance",
+                    "description": "Distance of the gradient (max to min) in mm",
+                    "type": "float",
+                    "default_value": 6.0
+                },
                 "gradientdiscretization":
                 {
                     "label": "Gradient Discretization",
-                    "description": "only applicable for linear infills; number of segments within the gradient(segmentLength=gradientThickness / gradientDiscretization); use sensible values to not overload",
+                    "description": "Only applicable for linear infills; number of segments within the gradient(segmentLength=gradientThickness / gradientDiscretization); use sensible values to not overload",
                     "type": "int",
-                    "default_value": 4
-                },
-                "gradientthickness":
-                {
-                    "label": "Gradient thickness",
-                    "description": "thickness of the gradient (max to min) in mm",
-                    "type": "float",
-                    "default_value": 6.0
+                    "default_value": 4,
+                    "minimum_value": 2,
+                    "minimum_value_warning": 3
                 },
                 "maxflow":
                 {
                     "label": "Max flow",
                     "description": "maximum extrusion flow",
                     "type": "float",
-                    "default_value": 350.0
+                    "default_value": 350.0,
+                    "minimum_value": 100.0
                 },
                 "minflow":
                 {
                     "label": "Min flow",
                     "description": "minimum extrusion flow",
                     "type": "float",
-                    "default_value": 50.0 
+                    "default_value": 50.0,
+                    "minimum_value": 0.0,
+                    "maximum_value": 100.0,
+                    "minimum_value_warning": 10.0,
+                    "maximum_value_warning": 90.0
                 },
                 "extruder_nb":
                 {
