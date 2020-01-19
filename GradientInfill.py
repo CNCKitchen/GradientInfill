@@ -6,7 +6,8 @@ License: MIT
 Author: Stefan Hermann - CNC Kitchen
 Version: 1.0
 
-Modification : 19/01/2020  -> Transform into a Cura Postprocessing PlugIn
+5axes modification : 19/01/2020  -> Transform into a Cura Postprocessing PlugIn Script
+
 """
 
 from ..Script import Script
@@ -276,7 +277,9 @@ class GradientInfill(Script):
                     "label": "Gradient Distance",
                     "description": "Distance of the gradient (max to min) in mm",
                     "type": "float",
-                    "default_value": 6.0
+                    "default_value": 6.0,
+                    "minimum_value": 1.0,
+                    "minimum_value_warning": 2.0
                 },
                 "gradientdiscretization":
                 {
@@ -284,8 +287,8 @@ class GradientInfill(Script):
                     "description": "Only applicable for linear infills; number of segments within the gradient(segmentLength=gradientThickness / gradientDiscretization); use sensible values to not overload",
                     "type": "int",
                     "default_value": 4,
-                    "minimum_value": 2,
-                    "minimum_value_warning": 3
+                    "minimum_value": 1,
+                    "minimum_value_warning": 2
                 },
                 "maxflow":
                 {
@@ -424,6 +427,7 @@ class GradientInfill(Script):
                                 lines[line_index] = new_Line
                                 
                             else :
+                                #outPutLine = "; GradientInfill segmentSteps < 2\n"
                                 outPutLine = ""
                                 for element in splitLine:
                                     if "E" in element:
@@ -468,4 +472,3 @@ class GradientInfill(Script):
             final_lines = "\n".join(lines)
             data[layer_index] = final_lines
         return data
-    
