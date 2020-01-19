@@ -14,10 +14,10 @@ For this script to work, also activate "Relative Extrusion" under "Special Modes
 
 Further instructions can be found on my website: http://cnckitchen.com/blog/gradient-infill-for-3d-prints
 
-# GradientInfill
+# GradientInfill.py
 
 GradientInfill.py Posprocessing Script for Cura PlugIn. 
 
-Save the file in the C:\Program Files\Ultimaker Cura X.X\plugins\PostProcessingPlugin\scripts directory
+Save the file in the **C:\Program Files\Ultimaker Cura X.X\plugins\PostProcessingPlugin\scripts directory
 
 ![PlugIn](https://user-images.githubusercontent.com/11015345/72688053-110a0a00-3b04-11ea-8725-f602c0e98951.jpg)
