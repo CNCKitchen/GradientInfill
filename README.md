@@ -16,4 +16,6 @@ Further instructions can be found on my website: http://cnckitchen.com/blog/grad
 
 # GradientInfill
 
-GradientInfill.py Posprocessing Script for Cura. 
+GradientInfill.py Posprocessing Script for Cura PlugIn. 
+
+Save the file in the C:\Program Files\Ultimaker Cura X.X\plugins\PostProcessingPlugin\scripts directory
