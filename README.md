@@ -13,3 +13,7 @@ It is also important to make sure that the "Walls" are printed before the "Infil
 For this script to work, also activate "Relative Extrusion" under "Special Modes".
 
 Further instructions can be found on my website: http://cnckitchen.com/blog/gradient-infill-for-3d-prints
+
+# GradientInfill
+
+GradientInfill.py Posprocessing Script for Cura. 
