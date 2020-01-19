@@ -219,6 +219,49 @@ def is_begin_infill_segment_line(line: str) -> bool:
     """
     return line.startswith(";TYPE:FILL")
 
+
+def mfill_mode(Mode):
+    """Definie the type of Infill pattern
+
+       linear infill like rectilinear or triangles = 2
+       infill with small segments like gyroid = 1
+
+    Args:
+        line (Mode): Infill Pattern
+
+    Returns:
+        Int: the Type of infill pattern
+    """
+    iMode=0
+    if Mode == 'grid':
+        iMode=2
+    if Mode == 'lines':
+        iMode=2
+    if Mode == 'triangles':
+        iMode=2
+    if Mode == 'trihexagon':
+        iMode=2
+    if Mode == 'cubic':
+        iMode=2
+    if Mode == 'cubicsubdiv':
+        iMode=2
+    if Mode == 'tetrahedral':
+        iMode=2
+    if Mode == 'quarter_cubic':
+        iMode=2
+    if Mode == 'concentric':
+        iMode=0
+    if Mode == 'zigzag':
+        iMode=2
+    if Mode == 'cross':
+        iMode=0
+    if Mode == 'cross_3d':
+        iMode=0
+    if Mode == 'gyroid':
+        iMode=1
+
+    return iMode
+        
 class GradientInfill(Script):
     def getSettingDataString(self):
         return """{
@@ -256,15 +299,14 @@ class GradientInfill(Script):
                     "type": "float",
                     "default_value": 50.0 
                 },
-                "filltype":
+                "extruder_nb":
                 {
-                    "label": "Infill Type",
-                    "description": "linear infill like rectilinear or triangles =2,infill with small segments like honeycomb or gyroid =1",
+                    "label": "Extruder Id",
+                    "description": "Define extruder Id in case of multi extruders",
+                    "unit": "",
                     "type": "int",
-                    "default_value": 2,
-                    "minimum_value": "1",
-                    "maximum_value": "2"
-                }                
+                    "default_value": 1
+                }
             }
         }"""
 
@@ -277,17 +319,36 @@ class GradientInfill(Script):
     def execute(self, data):
 
         gradient_discretization = float(self.getSettingValueByKey("gradientdiscretization"))
-        infill_type = int(self.getSettingValueByKey("filltype"))
         max_flow= float(self.getSettingValueByKey("maxflow"))
         min_flow= float(self.getSettingValueByKey("minflow"))
         gradient_thickness= float(self.getSettingValueByKey("gradientthickness"))
+        extruder_id  = self.getSettingValueByKey("extruder_nb")
+        extruder_id = extruder_id -1
+        
+        #   machine_extruder_count
+        extruder_count=Application.getInstance().getGlobalContainerStack().getProperty("machine_extruder_count", "value")
+        extruder_count = extruder_count-1
+        if extruder_id>extruder_count :
+            extruder_id=extruder_count
 
+        extrud = list(Application.getInstance().getGlobalContainerStack().extruders.values())
+
+        infillpattern = extrud[extruder_id].getProperty("infill_pattern", "value")
+        relativeextrusion = extrud[extruder_id].getProperty("relative_extrusion", "value")
+        if relativeextrusion == False:
+            Logger.log('d', 'Gcode must be generate in relative extrusion')
+            # Message('Gcode must be generate in relative extrusion', title = catalog.i18nc("@info:title", "Post Processing")).show()
+            # raise SyntaxError('Gcode must be generate in relative extrusion')
+        
         """Parse Gcode and modify infill portions with an extrusion width gradient."""
         currentSection = Section.NOTHING
         lastPosition = Point2D(-10000, -10000)
         gradientDiscretizationLength = gradient_thickness / gradient_discretization
 
+        infill_type=mfill_mode(infillpattern)
+
         Logger.log('d',  "DradientFill Param : " + str(gradientDiscretizationLength) + "/" + str(max_flow) + "/" + str(min_flow) + "/" + str(gradient_discretization)+ "/" + str(gradient_thickness) )
+        Logger.log('d',  "Pattern Param : " + infillpattern + "/" + str(infill_type) )
 
         for layer in data:
             layer_index = data.index(layer)
@@ -317,7 +378,8 @@ class GradientInfill(Script):
                         if searchSpeed:
                             new_Line="G1 F{}\n".format(searchSpeed.group(1))
                         else:
-                            raise SyntaxError('Gcode file parsing error for line {currentLine}')
+                            # raise SyntaxError('Gcode file parsing error for line {currentLine}')
+                            Logger.log('d', 'Gcode file parsing error for line : ' + currentLine )
                     
                     if "E" in currentLine and "G1" in currentLine and " X" in currentLine and "Y" in currentLine:
                         currentPosition = getXY(currentLine)
@@ -399,3 +461,4 @@ class GradientInfill(Script):
             final_lines = "\n".join(lines)
             data[layer_index] = final_lines
         return data
+    
