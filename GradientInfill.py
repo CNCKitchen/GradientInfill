@@ -275,8 +275,8 @@ class GradientInfill(Script):
                 {
                     "label": "Gradient Discretization",
                     "description": "only applicable for linear infills; number of segments within the gradient(segmentLength=gradientThickness / gradientDiscretization); use sensible values to not overload",
-                    "type": "float",
-                    "default_value": 4.0
+                    "type": "int",
+                    "default_value": 4
                 },
                 "gradientthickness":
                 {
