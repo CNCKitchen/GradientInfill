@@ -346,9 +346,10 @@ class GradientInfill(Script):
         infillpattern = extrud[extruder_id].getProperty("infill_pattern", "value")
         relativeextrusion = extrud[extruder_id].getProperty("relative_extrusion", "value")
         if relativeextrusion == False:
-            Logger.log('d', 'Gcode must be generate in relative extrusion')
-            # Message('Gcode must be generate in relative extrusion', title = catalog.i18nc("@info:title", "Post Processing")).show()
-            # raise SyntaxError('Gcode must be generate in relative extrusion')
+            #
+            Logger.log('d', 'Logger: Gcode must be generate in relative extrusion')
+            Message('Message : Gcode must be generate in relative extrusion', title = catalog.i18nc("@info:title", "Post Processing")).show()
+            raise SyntaxError('SyntaxError : Gcode must be generate in relative extrusion')
         
         """Parse Gcode and modify infill portions with an extrusion width gradient."""
         currentSection = Section.NOTHING
