@@ -278,6 +278,7 @@ class GradientInfill(Script):
                 {
                     "label": "Gradient Distance",
                     "description": "Distance of the gradient (max to min) in mm",
+                    "unit": "mm",
                     "type": "float",
                     "default_value": 6.0,
                     "minimum_value": 1.0,
@@ -295,29 +296,32 @@ class GradientInfill(Script):
                 "maxflow":
                 {
                     "label": "Max flow",
-                    "description": "maximum extrusion flow",
-                    "type": "float",
-                    "default_value": 350.0,
-                    "minimum_value": 100.0
+                    "description": "Maximum extrusion flow",
+                    "unit": "%",
+                    "type": "int",
+                    "default_value": 350,
+                    "minimum_value": 100
                 },
                 "minflow":
                 {
                     "label": "Min flow",
-                    "description": "minimum extrusion flow",
-                    "type": "float",
-                    "default_value": 50.0,
-                    "minimum_value": 0.0,
-                    "maximum_value": 100.0,
-                    "minimum_value_warning": 10.0,
-                    "maximum_value_warning": 90.0
+                    "description": "Minimum extrusion flow",
+                    "unit": "%",
+                    "type": "int",
+                    "default_value": 50,
+                    "minimum_value": 0,
+                    "maximum_value": 100,
+                    "minimum_value_warning": 10,
+                    "maximum_value_warning": 90
                 },
                 "shortdistflow":
                 {
                     "label": "Short distance flow",
                     "description": "Extrusion flow for short distance < 2x Gradient distance",
-                    "type": "float",
+                    "unit": "%",
+                    "type": "int",
                     "value": "math.floor(maxflow)", 
-                    "minimum_value": 100.0
+                    "minimum_value": 100
                 },                
                 "extruder_nb":
                 {
