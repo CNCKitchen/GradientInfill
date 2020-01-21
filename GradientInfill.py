@@ -8,6 +8,7 @@ Version: 1.0
 
 5axes modification : 19/01/2020  -> Transform into a Cura Postprocessing PlugIn Script
 5axes modification : 21/01/2020  -> Connect Infill Lines mode not supported
+5axes modification : 22/01/2020  -> Add dedicate flow for short distance
 
 """
 
@@ -310,6 +311,14 @@ class GradientInfill(Script):
                     "minimum_value_warning": 10.0,
                     "maximum_value_warning": 90.0
                 },
+                "shortdistflow":
+                {
+                    "label": "Short distance flow",
+                    "description": "Extrusion flow for short distance < 2x Gradient distance",
+                    "type": "float",
+                    "value": "math.floor(maxflow)", 
+                    "minimum_value": 100.0
+                },                
                 "extruder_nb":
                 {
                     "label": "Extruder Id",
@@ -324,6 +333,7 @@ class GradientInfill(Script):
 
 ## -----------------------------------------------------------------------------
 #
+#  Main Prog
 #
 ## -----------------------------------------------------------------------------
 
@@ -449,7 +459,7 @@ class GradientInfill(Script):
                                 outPutLine = ""
                                 for element in splitLine:
                                     if "E" in element:
-                                        outPutLine = outPutLine + "E" + str(round(extrusionLength * max_flow / 100, 5))
+                                        outPutLine = outPutLine + "E" + str(round(extrusionLength * link_flow / 100, 5))
                                     else:
                                         outPutLine = outPutLine + element + " "
                                 outPutLine = outPutLine # + "\n"
@@ -481,11 +491,6 @@ class GradientInfill(Script):
                 # line with move
                 if " X" in currentLine and " Y" in currentLine and ("G1" in currentLine or "G0" in currentLine):
                     lastPosition = getXY(currentLine)
-
-                # write uneditedLine
-                # if writtenToFile == 0:
-                    # outputFile.write(currentLine)
-                    
 
             final_lines = "\n".join(lines)
             data[layer_index] = final_lines
