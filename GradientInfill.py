@@ -346,6 +346,7 @@ class GradientInfill(Script):
         gradient_discretization = float(self.getSettingValueByKey("gradientdiscretization"))
         max_flow= float(self.getSettingValueByKey("maxflow"))
         min_flow= float(self.getSettingValueByKey("minflow"))
+        link_flow= float(self.getSettingValueByKey("shortdistflow"))
         gradient_thickness= float(self.getSettingValueByKey("gradientthickness"))
         extruder_id  = self.getSettingValueByKey("extruder_nb")
         extruder_id = extruder_id -1
