@@ -7,6 +7,7 @@ Author: Stefan Hermann - CNC Kitchen
 Version: 1.0
 
 5axes modification : 19/01/2020  -> Transform into a Cura Postprocessing PlugIn Script
+5axes modification : 21/01/2020  -> Connect Infill Lines mode not supported
 
 """
 
@@ -245,7 +246,7 @@ def mfill_mode(Mode):
     if Mode == 'cubic':
         iMode=2
     if Mode == 'cubicsubdiv':
-        iMode=2
+        iMode=0
     if Mode == 'tetrahedral':
         iMode=2
     if Mode == 'quarter_cubic':
@@ -253,11 +254,11 @@ def mfill_mode(Mode):
     if Mode == 'concentric':
         iMode=0
     if Mode == 'zigzag':
-        iMode=2
+        iMode=0
     if Mode == 'cross':
-        iMode=0
+        iMode=1
     if Mode == 'cross_3d':
-        iMode=0
+        iMode=1
     if Mode == 'gyroid':
         iMode=1
 
@@ -321,10 +322,10 @@ class GradientInfill(Script):
         }"""
 
 
-##  Performs a search-and-replace on all g-code.
+## -----------------------------------------------------------------------------
 #
-#   Due to technical limitations, the search can't cross the border between
-#   layers.
+#
+## -----------------------------------------------------------------------------
 
     def execute(self, data):
 
@@ -344,7 +345,10 @@ class GradientInfill(Script):
         extrud = list(Application.getInstance().getGlobalContainerStack().extruders.values())
 
         infillpattern = extrud[extruder_id].getProperty("infill_pattern", "value")
+        connectinfill = extrud[extruder_id].getProperty("zig_zaggify_infill", "value")
+        
         relativeextrusion = extrud[extruder_id].getProperty("relative_extrusion", "value")
+        link = extrud[extruder_id].getProperty("relative_extrusion", "value")
         if relativeextrusion == False:
             #
             Logger.log('d', 'Gcode must be generate in relative extrusion mode')
@@ -357,14 +361,27 @@ class GradientInfill(Script):
         gradientDiscretizationLength = gradient_thickness / gradient_discretization
 
         infill_type=mfill_mode(infillpattern)
+        if infill_type == 0:
+            #
+            Logger.log('d', 'Infill Pattern not supported : ' + infillpattern)
+            Message('Infill Pattern not supported : ' + infillpattern , title = catalog.i18nc("@info:title", "Post Processing")).show()
 
-        Logger.log('d',  "DradientFill Param : " + str(gradientDiscretizationLength) + "/" + str(max_flow) + "/" + str(min_flow) + "/" + str(gradient_discretization)+ "/" + str(gradient_thickness) )
+            return None
+
+        if connectinfill == True:
+            #
+            Logger.log('d', 'Connect Infill Lines no supported')
+            Message('Gcode must be generate without Connect Infill Lines mode activated' , title = catalog.i18nc("@info:title", "Post Processing")).show()
+            return None      
+
+        Logger.log('d',  "GradientFill Param : " + str(gradientDiscretizationLength) + "/" + str(max_flow) + "/" + str(min_flow) + "/" + str(gradient_discretization)+ "/" + str(gradient_thickness) )
         Logger.log('d',  "Pattern Param : " + infillpattern + "/" + str(infill_type) )
 
         for layer in data:
             layer_index = data.index(layer)
             lines = layer.split("\n")
             for currentLine in lines:
+                new_Line=""
                 line_index = lines.index(currentLine)
                 
                 if is_begin_layer_line(currentLine):
@@ -423,7 +440,7 @@ class GradientInfill(Script):
 
                                 # MissingSegment
                                 segmentLengthRatio = get_points_distance(lastPosition, currentPosition) / segmentLength
-                                new_Line=new_Line+get_extrusion_command(currentPosition.x,currentPosition.y,segmentLengthRatio * extrusionLength * max_flow / 100)
+                                new_Line=new_Line+get_extrusion_command(currentPosition.x,currentPosition.y,segmentLengthRatio * extrusionLength * max_flow / 100) # + " ; Last line"
                                 
                                 lines[line_index] = new_Line
                                 
