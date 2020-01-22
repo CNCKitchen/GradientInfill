@@ -9,13 +9,14 @@ Version: 1.0
 5axes modification : 19/01/2020  -> Transform into a Cura Postprocessing PlugIn Script
 5axes modification : 21/01/2020  -> Connect Infill Lines mode not supported
 5axes modification : 22/01/2020  -> Add dedicate flow for short distance
+5axes modification : 22/01/2020  -> Add gradiant speed
 
 """
 
 from ..Script import Script
 from UM.Logger import Logger
 from UM.Application import Application
-import re #To perform the search and replace.
+import re #To perform the search
 from cura.Settings.ExtruderManager import ExtruderManager
 from collections import namedtuple
 from enum import Enum
@@ -322,7 +323,23 @@ class GradientInfill(Script):
                     "type": "int",
                     "value": "math.floor(maxflow)", 
                     "minimum_value": 100
-                },                
+                },
+                "gradualspeed":
+                {
+                    "label": "Gradual speed",
+                    "description": "Activate also Gradual Speed linked to the gradual flow",
+                    "type": "bool",
+                    "default_value": false
+                },
+                "maxoverspeed":
+                {
+                    "label": "Max over speed",
+                    "description": "Maximum over speed factor",
+                    "unit": "%",
+                    "type": "int",
+                    "default_value": 200,
+                    "enabled": "gradualspeed"
+                }, 
                 "extruder_nb":
                 {
                     "label": "Extruder Id",
@@ -349,6 +366,9 @@ class GradientInfill(Script):
         link_flow= float(self.getSettingValueByKey("shortdistflow"))
         gradient_thickness= float(self.getSettingValueByKey("gradientthickness"))
         extruder_id  = self.getSettingValueByKey("extruder_nb")
+        gradual_speed= bool(self.getSettingValueByKey("gradualspeed"))
+        max_over_speed_factor= float(self.getSettingValueByKey("maxoverspeed"))
+        max_over_speed_factor = max_over_speed_factor /100
         extruder_id = extruder_id -1
         
         #   machine_extruder_count
@@ -397,6 +417,7 @@ class GradientInfill(Script):
             lines = layer.split("\n")
             for currentLine in lines:
                 new_Line=""
+                stringFeed = ""
                 line_index = lines.index(currentLine)
                 
                 if is_begin_layer_line(currentLine):
@@ -418,16 +439,17 @@ class GradientInfill(Script):
                 if currentSection == Section.INFILL:
                     if "F" in currentLine and "G1" in currentLine:
                         searchSpeed = re.search(r"F(\d*\.?\d*)", currentLine)
+                        
                         if searchSpeed:
-                            new_Line="G1 F{}\n".format(searchSpeed.group(1))
+                            current_feed=float(searchSpeed.group(1))
+                            new_Line="G1 F{}\n".format(current_feed)
                         else:
-                            # raise SyntaxError('Gcode file parsing error for line {currentLine}')
                             Logger.log('d', 'Gcode file parsing error for line : ' + currentLine )
-                    
-                    if "E" in currentLine and "G1" in currentLine and " X" in currentLine and "Y" in currentLine:
+
+                    if "E" in currentLine and "G1" in currentLine and "X" in currentLine and "Y" in currentLine:
                         currentPosition = getXY(currentLine)
                         splitLine = currentLine.split(" ")
-
+                        
                         # if infill_type == Infill.LINEAR:  
                         if infill_type == 2:
                             # find extrusion length
@@ -447,21 +469,43 @@ class GradientInfill(Script):
                                     shortestDistance = min_distance_from_segment(Segment(lastPosition, segmentEnd), perimeterSegments)
                                     if shortestDistance < gradient_thickness:
                                         segmentExtrusion = extrusionLengthPerSegment * mapRange((0, gradient_thickness), (max_flow / 100, min_flow / 100), shortestDistance)
+                                        segmentFeed = current_feed / mapRange((0, gradient_thickness), (max_flow / 100, min_flow / 100), shortestDistance)
+    
+                                        if gradual_speed:
+                                            if segmentFeed > (current_feed * max_over_speed_factor):
+                                                segmentFeed = current_feed * max_over_speed_factor
+                                            stringFeed = " F{}".format(int(segmentFeed))
+
                                     else:
                                         segmentExtrusion = extrusionLengthPerSegment * min_flow / 100
+                                        if min_flow>0:
+                                            segmentFeed = current_feed / (min_flow / 100)
+                                        else:
+                                            segmentFeed = current_feed * max_over_speed_factor
+                                            
+                                            
+                                        if gradual_speed:
+                                            if segmentFeed > (current_feed * max_over_speed_factor):
+                                                segmentFeed = current_feed * max_over_speed_factor
+                                            stringFeed = " F{}".format(int(segmentFeed))
 
-                                    new_Line=new_Line + get_extrusion_command(segmentEnd.x, segmentEnd.y, segmentExtrusion) + "\n"
+                                    new_Line=new_Line + get_extrusion_command(segmentEnd.x, segmentEnd.y, segmentExtrusion) + stringFeed + "\n"
                                     lastPosition = segmentEnd
 
                                 # MissingSegment
                                 segmentLengthRatio = get_points_distance(lastPosition, currentPosition) / segmentLength
-                                new_Line=new_Line+get_extrusion_command(currentPosition.x,currentPosition.y,segmentLengthRatio * extrusionLength * max_flow / 100) # + " ; Last line"
+                                segmentFeed = current_feed / ( max_flow / 100 )
+                                if gradual_speed:
+                                    stringFeed = " F{}".format(int(segmentFeed))
+                    
+                                new_Line=new_Line+get_extrusion_command(currentPosition.x,currentPosition.y,segmentLengthRatio * extrusionLength * max_flow / 100) + stringFeed # + " ; Last line"
                                 
                                 lines[line_index] = new_Line
                                 
                             else :
-                                #outPutLine = "; GradientInfill segmentSteps < 2\n"
                                 outPutLine = ""
+                                # outPutLine = "; GradientInfill segmentSteps < 2\n"
+                               
                                 for element in splitLine:
                                     if "E" in element:
                                         outPutLine = outPutLine + "E" + str(round(extrusionLength * link_flow / 100, 5))
@@ -482,19 +526,31 @@ class GradientInfill(Script):
                                 for element in splitLine:
                                     if "E" in element:
                                         newE = float(element[1:]) * mapRange((0, gradient_thickness), (max_flow / 100, min_flow / 100), shortestDistance)
+                                        segmentFeed = current_feed / mapRange((0, gradient_thickness), (max_flow / 100, min_flow / 100), shortestDistance)
+                                        if gradual_speed:
+                                            if segmentFeed > (current_feed * max_over_speed_factor):
+                                                segmentFeed = current_feed * max_over_speed_factor
+                                            stringFeed = " F{}".format(int(segmentFeed))
+
                                         outPutLine = outPutLine + "E" + str(round(newE, 5))
+                                        # test if F already define in line
+                                        if not " F" in outPutLine and gradual_speed:
+                                            outPutLine = outPutLine + stringFeed
                                     else:
                                         outPutLine = outPutLine + element + " "
 
-                                outPutLine = outPutLine + "\n"
+                                outPutLine = outPutLine # + "\n"
                                 lines[line_index] = outPutLine
-
-                                # writtenToFile = 1
+                    #
+                    # comment like ;MESH:NONMESH 
+                    #
                     if ";" in currentLine:
                         currentSection = Section.NOTHING
-
+                        lines[line_index] = currentLine # other Comment 
+                #
                 # line with move
-                if " X" in currentLine and " Y" in currentLine and ("G1" in currentLine or "G0" in currentLine):
+                #
+                if "X" in currentLine and "Y" in currentLine and ("G1" in currentLine or "G0" in currentLine):
                     lastPosition = getXY(currentLine)
 
             final_lines = "\n".join(lines)
