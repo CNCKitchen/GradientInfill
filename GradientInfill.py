@@ -25,7 +25,7 @@ from UM.Message import Message
 from UM.i18n import i18nCatalog
 catalog = i18nCatalog("cura")
 
-__version__ = '1.3'
+__version__ = '1.4'
 
 
 Point2D = namedtuple('Point2D', 'x y')
@@ -258,9 +258,9 @@ def mfill_mode(Mode):
     if Mode == 'zigzag':
         iMode=0
     if Mode == 'cross':
-        iMode=0
+        iMode=1
     if Mode == 'cross_3d':
-        iMode=0
+        iMode=1
     if Mode == 'gyroid':
         iMode=1
 
@@ -339,6 +339,15 @@ class GradientInfill(Script):
                     "type": "int",
                     "default_value": 200,
                     "enabled": "gradualspeed"
+                },
+                "minoverspeed":
+                {
+                    "label": "Min over speed",
+                    "description": "Minimum over speed factor",
+                    "unit": "%",
+                    "type": "int",
+                    "default_value": 60,
+                    "enabled": "gradualspeed"
                 }, 
                 "extruder_nb":
                 {
@@ -360,20 +369,17 @@ class GradientInfill(Script):
 
     def execute(self, data):
 
-        gradient_thickness= float(self.getSettingValueByKey("gradientthickness"))
         gradient_discretization = float(self.getSettingValueByKey("gradientdiscretization"))
         max_flow= float(self.getSettingValueByKey("maxflow"))
         min_flow= float(self.getSettingValueByKey("minflow"))
-        
-        # link_flow used on short linear movement < 2 x gradient_thickness ( not tested )
         link_flow= float(self.getSettingValueByKey("shortdistflow"))
-        
-        # Gradiant Speed , Define a max_over_speed_factor to limit the maximum value
+        gradient_thickness= float(self.getSettingValueByKey("gradientthickness"))
+        extruder_id  = self.getSettingValueByKey("extruder_nb")
         gradual_speed= bool(self.getSettingValueByKey("gradualspeed"))
         max_over_speed_factor= float(self.getSettingValueByKey("maxoverspeed"))
         max_over_speed_factor = max_over_speed_factor /100
-        
-        extruder_id  = self.getSettingValueByKey("extruder_nb")
+        min_over_speed_factor= float(self.getSettingValueByKey("minoverspeed"))
+        min_over_speed_factor = min_over_speed_factor /100
         extruder_id = extruder_id -1
         
         #   machine_extruder_count
@@ -401,15 +407,15 @@ class GradientInfill(Script):
         gradientDiscretizationLength = gradient_thickness / gradient_discretization
 
         infill_type=mfill_mode(infillpattern)
-        # if infill pattern not supported abort the Code generation
         if infill_type == 0:
             #
             Logger.log('d', 'Infill Pattern not supported : ' + infillpattern)
             Message('Infill Pattern not supported : ' + infillpattern , title = catalog.i18nc("@info:title", "Post Processing")).show()
+
             return None
-        
-        # if Connect Infill Lines mode activated abort the Code generation       
+
         if connectinfill == True:
+            #
             Logger.log('d', 'Connect Infill Lines no supported')
             Message('Gcode must be generate without Connect Infill Lines mode activated' , title = catalog.i18nc("@info:title", "Post Processing")).show()
             return None      
@@ -479,6 +485,8 @@ class GradientInfill(Script):
                                         if gradual_speed:
                                             if segmentFeed > (current_feed * max_over_speed_factor):
                                                 segmentFeed = current_feed * max_over_speed_factor
+                                            if segmentFeed < (current_feed * min_over_speed_factor):
+                                                segmentFeed = current_feed * min_over_speed_factor
                                             stringFeed = " F{}".format(int(segmentFeed))
 
                                     else:
@@ -492,6 +500,8 @@ class GradientInfill(Script):
                                         if gradual_speed:
                                             if segmentFeed > (current_feed * max_over_speed_factor):
                                                 segmentFeed = current_feed * max_over_speed_factor
+                                            if segmentFeed < (current_feed * min_over_speed_factor):
+                                                segmentFeed = current_feed * min_over_speed_factor
                                             stringFeed = " F{}".format(int(segmentFeed))
 
                                     new_Line=new_Line + get_extrusion_command(segmentEnd.x, segmentEnd.y, segmentExtrusion) + stringFeed + "\n"
@@ -500,6 +510,8 @@ class GradientInfill(Script):
                                 # MissingSegment
                                 segmentLengthRatio = get_points_distance(lastPosition, currentPosition) / segmentLength
                                 segmentFeed = current_feed / ( max_flow / 100 )
+                                if segmentFeed < (current_feed * min_over_speed_factor):
+                                    segmentFeed = current_feed * min_over_speed_factor
                                 if gradual_speed:
                                     stringFeed = " F{}".format(int(segmentFeed))
                     
@@ -535,6 +547,8 @@ class GradientInfill(Script):
                                         if gradual_speed:
                                             if segmentFeed > (current_feed * max_over_speed_factor):
                                                 segmentFeed = current_feed * max_over_speed_factor
+                                            if segmentFeed < (current_feed * min_over_speed_factor):
+                                                segmentFeed = current_feed * min_over_speed_factor
                                             stringFeed = " F{}".format(int(segmentFeed))
 
                                         outPutLine = outPutLine + "E" + str(round(newE, 5))
