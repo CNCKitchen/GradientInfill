@@ -388,7 +388,10 @@ class GradientInfill(Script):
         if extruder_id>extruder_count :
             extruder_id=extruder_count
 
-        extrud = list(Application.getInstance().getGlobalContainerStack().extruders.values())
+        # Deprecation function
+        # extrud = list(Application.getInstance().getGlobalContainerStack().extruders.values())
+        extrud = Application.getInstance().getGlobalContainerStack().extruderList
+
 
         infillpattern = extrud[extruder_id].getProperty("infill_pattern", "value")
         connectinfill = extrud[extruder_id].getProperty("zig_zaggify_infill", "value")
