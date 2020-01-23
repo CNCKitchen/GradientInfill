@@ -10,6 +10,8 @@ Version: 1.0
 5axes modification : 21/01/2020  -> Connect Infill Lines mode not supported
 5axes modification : 22/01/2020  -> Add dedicate flow for short distance
 5axes modification : 22/01/2020  -> Add gradiant speed
+5axes modification : 23/01/2020  -> Test param infill_before_walls to false
+5axes modification : 23/01/2020  -> Option to test with Inner Wall or Outer Wall  
 
 """
 
@@ -25,7 +27,7 @@ from UM.Message import Message
 from UM.i18n import i18nCatalog
 catalog = i18nCatalog("cura")
 
-__version__ = '1.4'
+__version__ = '1.5'
 
 
 Point2D = namedtuple('Point2D', 'x y')
@@ -42,7 +44,7 @@ Segment = namedtuple('Segment', 'point1 point2')
 class Infill(Enum):
     """Enum for infill type."""
 
-    SMALL_SEGMENTS = 1  # infill with small segments like honeycomb or gyroid
+    SMALL_SEGMENTS = 1  # infill with small segments like gyroid
     LINEAR = 2  # linear infill like rectilinear or triangles
 
 class Section(Enum):
@@ -50,7 +52,8 @@ class Section(Enum):
 
     NOTHING = 0
     INNER_WALL = 1
-    INFILL = 2
+    OUTER_WALL = 2
+    INFILL = 3
 
 
 def dist(segment: Segment, point: Point2D) -> float:
@@ -188,7 +191,7 @@ def is_begin_inner_wall_line(line: str) -> bool:
     return line.startswith(";TYPE:WALL-INNER")
 
 
-def is_end_inner_wall_line(line: str) -> bool:
+def is_begin_outer_wall_line(line: str) -> bool:
     """Check if current line is the start of an outer wall section.
 
     Args:
@@ -356,6 +359,13 @@ class GradientInfill(Script):
                     "unit": "",
                     "type": "int",
                     "default_value": 1
+                },
+                "testouterwall":
+                {
+                    "label": "Test with outer wall",
+                    "description": "Test the gradiant with the outer wall segments",
+                    "type": "bool",
+                    "default_value": false
                 }
             }
         }"""
@@ -370,17 +380,22 @@ class GradientInfill(Script):
     def execute(self, data):
 
         gradient_discretization = float(self.getSettingValueByKey("gradientdiscretization"))
-        max_flow= float(self.getSettingValueByKey("maxflow"))
-        min_flow= float(self.getSettingValueByKey("minflow"))
-        link_flow= float(self.getSettingValueByKey("shortdistflow"))
-        gradient_thickness= float(self.getSettingValueByKey("gradientthickness"))
+        max_flow = float(self.getSettingValueByKey("maxflow"))
+        min_flow = float(self.getSettingValueByKey("minflow"))
+        link_flow = float(self.getSettingValueByKey("shortdistflow"))
+        gradient_thickness = float(self.getSettingValueByKey("gradientthickness"))
         extruder_id  = self.getSettingValueByKey("extruder_nb")
-        gradual_speed= bool(self.getSettingValueByKey("gradualspeed"))
-        max_over_speed_factor= float(self.getSettingValueByKey("maxoverspeed"))
-        max_over_speed_factor = max_over_speed_factor /100
-        min_over_speed_factor= float(self.getSettingValueByKey("minoverspeed"))
-        min_over_speed_factor = min_over_speed_factor /100
         extruder_id = extruder_id -1
+        gradual_speed= bool(self.getSettingValueByKey("gradualspeed"))
+        max_over_speed_factor = float(self.getSettingValueByKey("maxoverspeed"))
+        max_over_speed_factor = max_over_speed_factor /100
+        min_over_speed_factor = float(self.getSettingValueByKey("minoverspeed"))
+        min_over_speed_factor = min_over_speed_factor /100
+
+        test_outer_wall= bool(self.getSettingValueByKey("testouterwall"))
+        
+
+        
         
         #   machine_extruder_count
         extruder_count=Application.getInstance().getGlobalContainerStack().getProperty("machine_extruder_count", "value")
@@ -391,8 +406,7 @@ class GradientInfill(Script):
         # Deprecation function
         # extrud = list(Application.getInstance().getGlobalContainerStack().extruders.values())
         extrud = Application.getInstance().getGlobalContainerStack().extruderList
-
-
+ 
         infillpattern = extrud[extruder_id].getProperty("infill_pattern", "value")
         connectinfill = extrud[extruder_id].getProperty("zig_zaggify_infill", "value")
         
@@ -403,13 +417,13 @@ class GradientInfill(Script):
             Logger.log('d', 'Gcode must be generate in relative extrusion mode')
             Message('Gcode must be generate in relative extrusion mode', title = catalog.i18nc("@info:title", "Post Processing")).show()
             return None
-        
+
         # Note : Walls are used to define the boundary of the infill segment and detect if the point are in the 'Gradiant' area
         infillbeforewalls = extrud[extruder_id].getProperty("infill_before_walls", "value")
         if infillbeforewalls == True:
             #
             Logger.log('d', 'Gcode must be generate with the mode infill_before_walls to off')
-            Message('It is also important to make sure that the Walls are printed before the Infill (Infill before Walls must be set to  OFF)', title = catalog.i18nc("@info:title", "Post Processing")).show()
+            Message('It is important to make sure that the Walls are printed before the Infill (Infill before Walls must be set to  OFF)', title = catalog.i18nc("@info:title", "Post Processing")).show()
             return None
         
         """Parse Gcode and modify infill portions with an extrusion width gradient."""
@@ -444,18 +458,28 @@ class GradientInfill(Script):
                 
                 if is_begin_layer_line(currentLine):
                     perimeterSegments = []
+                    
                 if is_begin_inner_wall_line(currentLine):
                     currentSection = Section.INNER_WALL
+                    # Logger.log('d', 'is_begin_inner_wall_line'  )
 
-                if currentSection == Section.INNER_WALL and is_extrusion_line(currentLine):
-                    perimeterSegments.append(Segment(getXY(currentLine), lastPosition))
+                if is_begin_outer_wall_line(currentLine):
+                    currentSection = Section.OUTER_WALL
+                    # Logger.log('d', 'is_begin_outer_wall_line' )
 
-                if is_end_inner_wall_line(currentLine):
-                    currentSection = Section.NOTHING
+                if currentSection == Section.INNER_WALL and test_outer_wall == False:
+                    if is_extrusion_line(currentLine):
+                        perimeterSegments.append(Segment(getXY(currentLine), lastPosition))
+
+                if currentSection == Section.OUTER_WALL and test_outer_wall == True:
+                    if is_extrusion_line(currentLine):
+                        perimeterSegments.append(Segment(getXY(currentLine), lastPosition))
 
                 if is_begin_infill_segment_line(currentLine):
+                    # Log Size of perimeterSegments for debuging
+                    Logger.log('d', 'PerimeterSegments seg : {}'.format(len(perimeterSegments)))
                     currentSection = Section.INFILL
-                    # outputFile.write(currentLine)
+                    # ! Important 
                     continue
 
                 if currentSection == Section.INFILL:
