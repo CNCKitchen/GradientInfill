@@ -404,6 +404,14 @@ class GradientInfill(Script):
             Message('Gcode must be generate in relative extrusion mode', title = catalog.i18nc("@info:title", "Post Processing")).show()
             return None
         
+        # Note : Walls are used to define the boundary of the infill segment and detect if the point are in the 'Gradiant' area
+        infillbeforewalls = extrud[extruder_id].getProperty("infill_before_walls", "value")
+        if infillbeforewalls == true:
+            #
+            Logger.log('d', 'Gcode must be generate with the mode infill_before_walls to off')
+            Message('It is also important to make sure that the Walls are printed before the Infill (Infill before Walls must be set to  OFF)', title = catalog.i18nc("@info:title", "Post Processing")).show()
+            return None
+        
         """Parse Gcode and modify infill portions with an extrusion width gradient."""
         currentSection = Section.NOTHING
         lastPosition = Point2D(-10000, -10000)
